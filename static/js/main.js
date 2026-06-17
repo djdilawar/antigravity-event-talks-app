@@ -21,6 +21,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const retryBtn = document.getElementById('retry-btn');
     const exportCsvBtn = document.getElementById('export-csv-btn');
     
+    // Theme Toggle Elements
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    const sunIcon = themeToggleBtn.querySelector('.icon-sun');
+    const moonIcon = themeToggleBtn.querySelector('.icon-moon');
+    
     // Modal Elements
     const tweetDialog = document.getElementById('tweet-dialog');
     const tweetTextarea = document.getElementById('tweet-textarea');
@@ -339,6 +344,27 @@ document.addEventListener('DOMContentLoaded', () => {
     tweetDialog.addEventListener('click', (e) => {
         if (e.target === tweetDialog) {
             closeTweetModal();
+        }
+    });
+
+    // Theme Toggle Logic
+    const savedTheme = localStorage.getItem('theme') || 'dark';
+    if (savedTheme === 'light') {
+        document.documentElement.classList.add('light-theme');
+        sunIcon.style.display = 'none';
+        moonIcon.style.display = 'block';
+    }
+
+    themeToggleBtn.addEventListener('click', () => {
+        const isLight = document.documentElement.classList.toggle('light-theme');
+        if (isLight) {
+            localStorage.setItem('theme', 'light');
+            sunIcon.style.display = 'none';
+            moonIcon.style.display = 'block';
+        } else {
+            localStorage.setItem('theme', 'dark');
+            sunIcon.style.display = 'block';
+            moonIcon.style.display = 'none';
         }
     });
 
