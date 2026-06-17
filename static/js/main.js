@@ -93,96 +93,104 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Render cards to grid
     function renderNotes() {
-        notesGrid.innerHTML = '';
-        
-        const filteredNotes = getFilteredNotes();
-
-        // Toggle Export CSV button visibility based on note presence
-        if (exportCsvBtn) {
-            exportCsvBtn.style.display = filteredNotes.length > 0 ? 'inline-flex' : 'none';
-        }
-
-        // Toggle Empty State
-        if (filteredNotes.length === 0) {
-            notesGrid.style.display = 'none';
-            emptyState.style.display = 'flex';
-            return;
-        }
-
-        emptyState.style.display = 'none';
-        notesGrid.style.display = 'grid';
-
-        // Build HTML for each card
-        filteredNotes.forEach((note, index) => {
-            const card = document.createElement('article');
-            card.className = 'note-card';
-            card.style.animationDelay = `${index * 0.05}s`;
+        const updateDOM = () => {
+            notesGrid.innerHTML = '';
             
-            // Map types to corresponding badge classes
-            let badgeClass = 'badge-update';
-            const noteTypeLower = note.type.toLowerCase();
-            if (noteTypeLower.includes('feature')) badgeClass = 'badge-feature';
-            else if (noteTypeLower.includes('announcement')) badgeClass = 'badge-announcement';
-            else if (noteTypeLower.includes('issue')) badgeClass = 'badge-issue';
-            else if (noteTypeLower.includes('deprecation')) badgeClass = 'badge-deprecation';
+            const filteredNotes = getFilteredNotes();
 
-            card.innerHTML = `
-                <div>
-                    <div class="note-card-header">
-                        <span class="note-date">${escapeHTML(note.date)}</span>
-                        <span class="badge ${badgeClass}">${escapeHTML(note.type)}</span>
+            // Toggle Export CSV button visibility based on note presence
+            if (exportCsvBtn) {
+                exportCsvBtn.style.display = filteredNotes.length > 0 ? 'inline-flex' : 'none';
+            }
+
+            // Toggle Empty State
+            if (filteredNotes.length === 0) {
+                notesGrid.style.display = 'none';
+                emptyState.style.display = 'flex';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            notesGrid.style.display = 'grid';
+
+            // Build HTML for each card
+            filteredNotes.forEach((note, index) => {
+                const card = document.createElement('article');
+                card.className = 'note-card';
+                card.style.animationDelay = `${index * 0.05}s`;
+                
+                // Map types to corresponding badge classes
+                let badgeClass = 'badge-update';
+                const noteTypeLower = note.type.toLowerCase();
+                if (noteTypeLower.includes('feature')) badgeClass = 'badge-feature';
+                else if (noteTypeLower.includes('announcement')) badgeClass = 'badge-announcement';
+                else if (noteTypeLower.includes('issue')) badgeClass = 'badge-issue';
+                else if (noteTypeLower.includes('deprecation')) badgeClass = 'badge-deprecation';
+
+                card.innerHTML = `
+                    <div>
+                        <div class="note-card-header">
+                            <span class="note-date">${escapeHTML(note.date)}</span>
+                            <span class="badge ${badgeClass}">${escapeHTML(note.type)}</span>
+                        </div>
+                        <div class="note-card-body">
+                            ${note.content_html}
+                        </div>
                     </div>
-                    <div class="note-card-body">
-                        ${note.content_html}
+                    <div class="note-card-footer">
+                        <button class="btn-card-copy" aria-label="Copy update to clipboard">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                            </svg>
+                            <span>Copy</span>
+                        </button>
+                        <button class="btn-card-tweet" aria-label="Tweet this update">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                            </svg>
+                            <span>Tweet Update</span>
+                        </button>
                     </div>
-                </div>
-                <div class="note-card-footer">
-                    <button class="btn-card-copy" aria-label="Copy update to clipboard">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                        </svg>
-                        <span>Copy</span>
-                    </button>
-                    <button class="btn-card-tweet" aria-label="Tweet this update">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                        </svg>
-                        <span>Tweet Update</span>
-                    </button>
-                </div>
-            `;
+                `;
 
-            // Copy button handler
-            const copyBtn = card.querySelector('.btn-card-copy');
-            copyBtn.addEventListener('click', async () => {
-                try {
-                    await navigator.clipboard.writeText(note.content_text);
-                    
-                    // Visual feedback
-                    const span = copyBtn.querySelector('span');
-                    const origText = span.textContent;
-                    copyBtn.classList.add('copied');
-                    span.textContent = 'Copied!';
-                    
-                    setTimeout(() => {
-                        copyBtn.classList.remove('copied');
-                        span.textContent = origText;
-                    }, 1500);
-                } catch (err) {
-                    console.error('Failed to copy text: ', err);
-                    alert('Failed to copy to clipboard.');
-                }
+                // Copy button handler
+                const copyBtn = card.querySelector('.btn-card-copy');
+                copyBtn.addEventListener('click', async () => {
+                    try {
+                        await navigator.clipboard.writeText(note.content_text);
+                        
+                        // Visual feedback
+                        const span = copyBtn.querySelector('span');
+                        const origText = span.textContent;
+                        copyBtn.classList.add('copied');
+                        span.textContent = 'Copied!';
+                        
+                        setTimeout(() => {
+                            copyBtn.classList.remove('copied');
+                            span.textContent = origText;
+                        }, 1500);
+                    } catch (err) {
+                        console.error('Failed to copy text: ', err);
+                        alert('Failed to copy to clipboard.');
+                    }
+                });
+
+                // Tweet button handler
+                const tweetBtn = card.querySelector('.btn-card-tweet');
+                tweetBtn.addEventListener('click', () => {
+                    openTweetComposer(note);
+                });
+
+                notesGrid.appendChild(card);
             });
+        };
 
-            // Tweet button handler
-            const tweetBtn = card.querySelector('.btn-card-tweet');
-            tweetBtn.addEventListener('click', () => {
-                openTweetComposer(note);
-            });
-
-            notesGrid.appendChild(card);
-        });
+        if (document.startViewTransition) {
+            document.startViewTransition(updateDOM);
+        } else {
+            updateDOM();
+        }
     }
 
     // Modal compose logic
