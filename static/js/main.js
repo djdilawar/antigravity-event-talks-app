@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentFilter = 'all';
     let searchQuery = '';
     let selectedNote = null;
+    let isFirstRender = true;
 
     // DOM Elements
     const notesGrid = document.getElementById('notes-grid');
@@ -184,6 +185,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 notesGrid.appendChild(card);
             });
+
+            // Remove the 'initial-load' class after the stagger animations finish
+            if (isFirstRender) {
+                setTimeout(() => {
+                    notesGrid.classList.remove('initial-load');
+                }, 1000);
+                isFirstRender = false;
+            }
         };
 
         if (document.startViewTransition) {

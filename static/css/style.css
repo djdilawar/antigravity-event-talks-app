@@ -412,6 +412,9 @@ body {
     transition: var(--transition);
     position: relative;
     overflow: hidden;
+}
+
+.notes-grid.initial-load .note-card {
     animation: cardAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
@@ -873,5 +876,12 @@ body {
 }
 .light-theme .toolbar {
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+/* Snappy View Transitions Easing */
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 0.18s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
