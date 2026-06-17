@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const filterPillsContainer = document.getElementById('filter-pills');
     const refreshBtn = document.getElementById('refresh-btn');
     const retryBtn = document.getElementById('retry-btn');
+    const exportCsvBtn = document.getElementById('export-csv-btn');
     
     // Modal Elements
     const tweetDialog = document.getElementById('tweet-dialog');
@@ -70,12 +71,9 @@ document.addEventListener('DOMContentLoaded', () => {
         errorState.style.display = 'flex';
     }
 
-    // Render cards to grid
-    function renderNotes() {
-        notesGrid.innerHTML = '';
-        
-        // Filter notes by search query and category
-        const filteredNotes = allNotes.filter(note => {
+    // Get filtered release notes based on search query and category
+    function getFilteredNotes() {
+        return allNotes.filter(note => {
             const matchesCategory = currentFilter === 'all' || note.type.toLowerCase() === currentFilter.toLowerCase();
             
             const q = searchQuery.toLowerCase();
@@ -86,6 +84,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 
             return matchesCategory && matchesSearch;
         });
+    }
+
+    // Render cards to grid
+    function renderNotes() {
+        notesGrid.innerHTML = '';
+        
+        const filteredNotes = getFilteredNotes();
+
+        // Toggle Export CSV button visibility based on note presence
+        if (exportCsvBtn) {
+            exportCsvBtn.style.display = filteredNotes.length > 0 ? 'inline-flex' : 'none';
+        }
 
         // Toggle Empty State
         if (filteredNotes.length === 0) {
@@ -122,6 +132,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 </div>
                 <div class="note-card-footer">
+                    <button class="btn-card-copy" aria-label="Copy update to clipboard">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        <span>Copy</span>
+                    </button>
                     <button class="btn-card-tweet" aria-label="Tweet this update">
                         <svg viewBox="0 0 24 24" fill="currentColor">
                             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
@@ -130,6 +147,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     </button>
                 </div>
             `;
+
+            // Copy button handler
+            const copyBtn = card.querySelector('.btn-card-copy');
+            copyBtn.addEventListener('click', async () => {
+                try {
+                    await navigator.clipboard.writeText(note.content_text);
+                    
+                    // Visual feedback
+                    const span = copyBtn.querySelector('span');
+                    const origText = span.textContent;
+                    copyBtn.classList.add('copied');
+                    span.textContent = 'Copied!';
+                    
+                    setTimeout(() => {
+                        copyBtn.classList.remove('copied');
+                        span.textContent = origText;
+                    }, 1500);
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                    alert('Failed to copy to clipboard.');
+                }
+            });
 
             // Tweet button handler
             const tweetBtn = card.querySelector('.btn-card-tweet');
@@ -217,6 +256,48 @@ document.addEventListener('DOMContentLoaded', () => {
     // Refresh action
     refreshBtn.addEventListener('click', () => fetchReleaseNotes(true));
     retryBtn.addEventListener('click', () => fetchReleaseNotes());
+
+    // Export CSV action
+    if (exportCsvBtn) {
+        exportCsvBtn.addEventListener('click', () => {
+            const notesToExport = getFilteredNotes();
+            if (notesToExport.length === 0) return;
+            
+            const headers = ["Date", "Type", "Content", "Link"];
+            const csvRows = [];
+            
+            const escapeCSV = (str) => {
+                if (str === null || str === undefined) return '';
+                const stringVal = String(str);
+                return `"${stringVal.replace(/"/g, '""')}"`;
+            };
+            
+            // Add UTF-8 BOM so Excel opens it with correct encoding
+            csvRows.push(headers.map(escapeCSV).join(","));
+            
+            for (const note of notesToExport) {
+                const row = [
+                    note.date,
+                    note.type,
+                    note.content_text,
+                    note.link
+                ];
+                csvRows.push(row.map(escapeCSV).join(","));
+            }
+            
+            const blob = new Blob(["\uFEFF" + csvRows.join("\n")], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `bigquery_release_notes_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        });
+    }
 
     // Search query input handling
     searchInput.addEventListener('input', (e) => {
